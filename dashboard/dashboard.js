@@ -98,14 +98,14 @@ async function loadDashboard() {
         const sumResult = await fetchMetric(project, metric, 'sum', from, to);
         const avgResult = await fetchMetric(project, metric, 'avg', from, to);
 
+        const dataKey = `sum_${metric}`;
+
         if (sumResult?.data?.[0]) {
-          const sumKey = metric === 'totalCost' ? 'sum_sum' : metric === 'latency' ? 'sum_latency' : 'sum_totalTokens';
-          allProjectsData[project][metric].sum = sumResult.data[0][sumKey] || 0;
+          allProjectsData[project][metric].sum = parseFloat(sumResult.data[0][dataKey]) || 0;
         }
 
         if (avgResult?.data?.[0]) {
-          const avgKey = metric === 'totalCost' ? 'sum_sum' : metric === 'latency' ? 'sum_latency' : 'sum_totalTokens';
-          allProjectsData[project][metric].avg = avgResult.data[0][avgKey] || 0;
+          allProjectsData[project][metric].avg = parseFloat(avgResult.data[0][dataKey]) || 0;
         }
       }
     }
