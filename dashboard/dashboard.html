@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Langfuse Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .dashboard-container {
+      padding: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header-section {
+      margin-bottom: 30px;
+    }
+
+    .period-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .period-selector label {
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .period-selector select {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .aggregation-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .card h3 {
+      margin: 0 0 15px 0;
+      font-size: 14px;
+      color: #666;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .metric-group {
+      display: flex;
+      gap: 15px;
+      flex-direction: column;
+    }
+
+    .metric-item {
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .metric-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .metric-value.currency {
+      color: #2ecc71;
+    }
+
+    .metric-value.latency {
+      color: #3498db;
+    }
+
+    .metric-value.tokens {
+      color: #e74c3c;
+    }
+
+    .table-section {
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .table-section h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    table thead {
+      background-color: #f0f0f0;
+      border-bottom: 2px solid #ddd;
+    }
+
+    table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+    }
+
+    table td {
+      padding: 12px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    table tbody tr:hover {
+      background-color: #f5f5f5;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+
+    .error {
+      background-color: #fee;
+      color: #c33;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      border-left: 4px solid #c33;
+    }
+
+    .success-message {
+      color: #666;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <main class="dashboard-container">
+    <header class="header-section">
+      <h1>Dashboard de Métricas</h1>
+      <p>Visualize métricas consolidadas de todas as APIs do Langfuse</p>
+    </header>
+
+    <section class="period-selector">
+      <label for="period-select">Período:</label>
+      <select id="period-select">
+        <option value="1d">Último dia</option>
+        <option value="7d" selected>Última semana</option>
+        <option value="30d">Último mês</option>
+        <option value="90d">Últimos 3 meses</option>
+      </select>
+      <button id="refresh-btn" style="padding: 8px 16px; cursor: pointer;">Atualizar</button>
+    </section>
+
+    <div id="error-container"></div>
+
+    <section id="aggregation-section">
+      <div class="aggregation-cards">
+        <div class="card">
+          <h3>Custo Total</h3>
+          <div class="metric-group">
+            <div class="metric-item">
+              <div class="metric-label">Soma</div>
+              <div class="metric-value currency" id="totalcost-sum">-</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-label">Média</div>
+              <div class="metric-value currency" id="totalcost-avg">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Latência</h3>
+          <div class="metric-group">
+            <div class="metric-item">
+              <div class="metric-label">Soma (ms)</div>
+              <div class="metric-value latency" id="latency-sum">-</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-label">Média (ms)</div>
+              <div class="metric-value latency" id="latency-avg">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Tokens</h3>
+          <div class="metric-group">
+            <div class="metric-item">
+              <div class="metric-label">Soma</div>
+              <div class="metric-value tokens" id="tokens-sum">-</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-label">Média</div>
+              <div class="metric-value tokens" id="tokens-avg">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="table-section">
+      <h2>Por Projeto</h2>
+      <div id="table-container">
+        <div class="loading">Carregando dados...</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

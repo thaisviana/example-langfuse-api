@@ -1,130 +1,181 @@
 # example-langfuse-api
 
-Exemplo de consumo da API pública do Langfuse usando Python.
+Um exemplo completo de integração com a API pública do Langfuse usando o **GenPlat Langfuse Proxy**, incluindo um cliente reutilizável e um dashboard interativo para visualizar métricas de múltiplos projetos.
 
-## Overview
+## 📋 Overview
 
-Este repositório contém um cliente simples para a API de métricas do Langfuse.
-A implementação está em `client/langfuse_metrics_client.py` e fornece:
+Este repositório demonstra como:
 
-- autenticação Basic Auth usando `public_key` e `secret_key`
-- requisição ao endpoint `/api/public/v2/metrics`
-- serialização correta do corpo `query` como JSON
+- Consumir a **API v2 de Métricas do Langfuse** através do proxy da GenPlat
+- Criar um **cliente Python reutilizável** que autentica via proxy (requester token)
+- Construir um **dashboard web** com suporte a múltiplos projetos
+- Gerenciar acesso a projetos via **x-requester-token** e **x-ifood-langfuse-project**
+- Agregar dados de **múltiplos projetos simultaneamente**
 
-## Estrutura
+## 📁 Estrutura do Projeto
 
-- `client/langfuse_metrics_client.py` — classe `LangfuseMetricsClient`
-- `tests/test_langfuse_metrics_client.py` — testes unitários com `pytest`
-- `.env` — variáveis de ambiente para as chaves e `base_url`
-- `requirements.txt` — dependências do projeto
+```
+.
+├── client/
+│   ├── __init__.py
+│   └── langfuse_metrics_client.py    # Cliente Python do Langfuse via proxy
+├── dashboard/
+│   ├── index.html                     # Interface web
+│   ├── app.js                         # Lógica do dashboard
+│   └── styles.css                     # Estilos
+├── tests/
+│   ├── __init__.py
+│   └── test_langfuse_metrics_client.py # Testes unitários
+├── server.py                          # Servidor Flask (proxy seguro)
+├── .env                               # Variáveis de ambiente
+├── requirements.txt                   # Dependências Python
+└── README.md                          # Este arquivo
+```
 
-## Configuração
+## 🚀 Quick Start
 
-1. Crie e ative um ambiente Python:
+### Pré-requisitos
+
+- **VPN da iFood** conectada
+- **Requester Token** válido: gere com `tompero auth requester-token get` (salvo em `~/.config/tompero/requester_token`)
+- Acesso aos projetos Langfuse via proxy (solicite via [#genplat-support](https://ifood.slack.com/archives/C0593E3TSUE))
+
+### Instalação
+
+1. **Clone o repositório e crie um ambiente virtual:**
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-2. Instale as dependências:
+2. **Instale as dependências:**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Configure o arquivo `.env` com seus valores:
+3. **Configure as variáveis de ambiente no `.env`:**
 
 ```env
-LANGFUSE_BASE_URL="https://us.cloud.langfuse.com"
-LANGFUSE_ORG="your-org"
-# Para carregar projetos dinamicamente (opcional):
-LANGFUSE_ORG_PUBLIC_KEY="pk-lf-org-..."
-LANGFUSE_ORG_SECRET_KEY="sk-lf-org-..."
-# Ou configure manualmente:
-LANGFUSE_PROJECTS="project1,project2"
-LANGFUSE_PUBLIC_KEY_project1="pk-lf-..."
-LANGFUSE_SECRET_KEY_project1="sk-lf-..."
-LANGFUSE_PUBLIC_KEY_project2="pk-lf-..."
-LANGFUSE_SECRET_KEY_project2="sk-lf-..."
+# URL do proxy da GenPlat (produção)
+LANGFUSE_PROXY_URL=https://genplat-langfuse.ifoodcorp.com.br/v1
+
+# Lista de projetos Langfuse que você tem acesso
+LANGFUSE_PROJECTS=agent-cross-memory-service,ops-customer-support-agent
+
+# Requester Token (opcional — se não definido, lê de ~/.config/tompero/requester_token)
+# REQUESTER_TOKEN=eyJhbG...
 ```
 
-Para um único projeto, use:
-
-```env
-LANGFUSE_PUBLIC_KEY="pk-lf-..."
-LANGFUSE_SECRET_KEY="sk-lf-..."
-LANGFUSE_BASE_URL="https://us.cloud.langfuse.com"
-LANGFUSE_ORG="your-org"
-LANGFUSE_PROJECT="your-project"
-LANGFUSE_PROJECTS="your-project"
-```
-
-## Uso
-
-Exemplo de uso do cliente:
-
-```python
-from client.langfuse_metrics_client import LangfuseMetricsClient
-
-client = LangfuseMetricsClient(
-    public_key="pk-lf-...",
-    secret_key="sk-lf-...",
-    base_url="https://us.cloud.langfuse.com",
-)
-
-query = {
-    "view": "observations",
-    "metrics": [{"measure": "count", "aggregation": "sum"}],
-    "fromTimestamp": "2024-01-01T00:00:00Z",
-    "toTimestamp": "2024-12-31T23:59:59Z",
-}
-
-result = client.get_metrics(query)
-print(result)
-```
-
-## Dashboard
-
-Um dashboard frontend simples está disponível em `dashboard/` e funciona com um proxy de backend seguro para não expor sua `secret_key`.
-
-O dashboard permite selecionar entre múltiplos projetos configurados (incluindo "All Projects" para agregar dados de todos os projetos) e exibe informações da organização, além de permitir consultas de métricas personalizadas.
-
-### Executar o dashboard
-
-1. Instale as dependências:
-
-```bash
-pip install -r requirements.txt
-```
-
-2. Defina suas variáveis de ambiente em `.env`:
-
-```env
-LANGFUSE_PUBLIC_KEY="pk-lf-..."
-LANGFUSE_SECRET_KEY="sk-lf-..."
-LANGFUSE_BASE_URL="https://us.cloud.langfuse.com"
-```
-
-3. Inicie o servidor local:
+### Executar o Dashboard
 
 ```bash
 python server.py
 ```
 
-4. Abra o navegador em `http://localhost:5000`.
+Abra [http://localhost:5000](http://localhost:5000) no seu navegador.
 
-O frontend envia a consulta ao endpoint `/api/metrics`, e o servidor em `server.py` repassa a requisição ao Langfuse API usando o cliente Python.
+## ⚙️ Configuração
 
-## Testes
+### Projetos
 
-Execute os testes com:
+O dropdown de projetos é populado a partir da variável `LANGFUSE_PROJECTS` no `.env`. Separe múltiplos projetos por vírgula:
 
-```bash
-pytest tests/test_langfuse_metrics_client.py -v
+```env
+LANGFUSE_PROJECTS=projeto1,projeto2,projeto3
 ```
 
-## Observações
+A opção "Todos os projetos" (all) agrega métricas de todos os projetos configurados.
 
-- A autenticação do Langfuse usa o `public_key` como username e o `secret_key` como password em Basic Auth.
-- A classe gera o header `Authorization` corretamente e dispatcha a query como JSON no parâmetro `query`.
+### Requester Token
+
+O servidor carrega o token na seguinte ordem:
+1. Variável `REQUESTER_TOKEN` no `.env`
+2. Arquivo `~/.config/tompero/requester_token`
+
+### Proxy URL
+
+| Ambiente | URL |
+|----------|-----|
+| **Produção** | `https://genplat-langfuse.ifoodcorp.com.br/v1` |
+| **Sandbox** | `https://genplat-langfuse.ifood-sandbox.com.br/v1` |
+
+### Como funciona a autenticação
+
+O proxy da GenPlat gerencia a autenticação. O cliente envia:
+- `x-requester-token`: seu token de acesso
+- `x-ifood-langfuse-project`: nome do projeto Langfuse
+
+**Não é necessário configurar `public_key` ou `secret_key` do Langfuse** — o proxy cuida disso.
+
+## 💻 Uso
+
+### Cliente Python (Programático)
+
+```python
+from client.langfuse_metrics_client import LangfuseMetricsClient
+
+# Inicialize o cliente
+client = LangfuseMetricsClient(
+    proxy_url="https://genplat-langfuse.ifoodcorp.com.br/v1",
+    requester_token="<seu-token>",
+    project="ops-customer-support-agent",
+)
+
+# Construa uma query
+query = {
+    "view": "observations",
+    "metrics": [{"measure": "count", "aggregation": "sum"}],
+    "fromTimestamp": "2026-07-01T00:00:00Z",
+    "toTimestamp": "2026-07-31T23:59:59Z",
+}
+
+# Recupere as métricas
+result = client.get_metrics(query)
+print(result)
+```
+
+## 📚 API Reference
+
+### POST `/api/metrics`
+
+**Request body:**
+```json
+{
+  "query": {
+    "view": "observations",
+    "metrics": [{"measure": "count", "aggregation": "sum"}],
+    "fromTimestamp": "2026-01-01T00:00:00Z",
+    "toTimestamp": "2026-12-31T23:59:59Z"
+  },
+  "project": "ops-customer-support-agent"
+}
+```
+
+### GET `/api/info`
+
+**Response:**
+```json
+{
+  "projects": ["agent-cross-memory-service", "ops-customer-support-agent", "all"],
+  "default_project": "agent-cross-memory-service",
+  "proxy_url": "https://genplat-langfuse.ifoodcorp.com.br/v1"
+}
+```
+
+## 🔒 Segurança
+
+- O `requester_token` nunca é exposto no frontend — o `server.py` faz o proxy
+- O arquivo `.env` fica no servidor, inacessível aos clientes
+- A autenticação é gerenciada pelo proxy da GenPlat, sem chaves do Langfuse no código
+
+## 📖 Recursos
+
+- [Documentação GenPlat Langfuse Proxy](https://docs-data.ifoodcorp.com.br/ml-platform/gen_plat/langfuse_proxy)
+- [Documentação API Langfuse](https://langfuse.com/docs)
+- [API v2 Metrics Endpoint](https://langfuse.com/docs/analytics/api)
+
+---
+
+**Desenvolvido com ❤️ para simplificar a integração com Langfuse via GenPlat Proxy**

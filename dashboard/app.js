@@ -15,12 +15,11 @@ function setDefaultDates() {
   document.getElementById('toTimestamp').value = formatDate(today);
 }
 
-async function loadOrgProjectInfo() {
+async function loadProjectInfo() {
   try {
     const response = await fetch('/api/info');
     if (response.ok) {
       const data = await response.json();
-      document.getElementById('org').textContent = data.org || 'N/A';
       
       const projectSelect = document.getElementById('project-select');
       projectSelect.innerHTML = '';
@@ -28,18 +27,16 @@ async function loadOrgProjectInfo() {
       data.projects.forEach(project => {
         const option = document.createElement('option');
         option.value = project;
-        option.textContent = project === 'all' ? 'All Projects' : project;
+        option.textContent = project === 'all' ? 'Todos os projetos' : project;
         if (project === data.default_project) {
           option.selected = true;
         }
         projectSelect.appendChild(option);
       });
     } else {
-      document.getElementById('org').textContent = 'Erro ao carregar';
       document.getElementById('project-select').innerHTML = '<option>Erro</option>';
     }
   } catch (error) {
-    document.getElementById('org').textContent = 'Erro ao carregar';
     document.getElementById('project-select').innerHTML = '<option>Erro</option>';
   }
 }
@@ -117,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setDefaultDates();
   updateMetricOptions();
   document.getElementById('view').addEventListener('change', updateMetricOptions);
-  loadOrgProjectInfo();
+  loadProjectInfo();
 });
 
 form.addEventListener('submit', async (event) => {
